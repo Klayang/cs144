@@ -39,17 +39,17 @@ void Reassembler::update_buffer(Writer& output) {
 
             int start = current_index - *itr_index;
             int len = data.length() - start;
+            number_of_buffered_bytes -= (*itr_data).length();
             output.push(data.substr(start, len));
             current_index += len;
-            number_of_buffered_bytes -= len;
 
-            buffered_string_indices.erase(itr_index);
-            buffered_strings.erase(itr_data);
+            itr_index = buffered_string_indices.erase(itr_index);
+            itr_data = buffered_strings.erase(itr_data);
         }
         else {
-            buffered_string_indices.erase(itr_index);
-            buffered_strings.erase(itr_data);
             number_of_buffered_bytes -= (*itr_data).length();
+            itr_index = buffered_string_indices.erase(itr_index);
+            itr_data = buffered_strings.erase(itr_data);
         }
     }
 }
@@ -61,17 +61,17 @@ void Reassembler::buffer_data(long unsigned int first_index, string data) {
         long unsigned int start_index = *itr_index;
         string current_str = *itr_data;
         if (first_index < start_index) {
-            buffered_string_indices.insert(itr_index, first_index);
+            itr_index = buffered_string_indices.insert(itr_index, first_index);
             long unsigned int gap = start_index - first_index;
             if (data.length() <= gap) {
-                buffered_strings.insert(itr_data, data.substr(0, data.length()));
+                itr_data = buffered_strings.insert(itr_data, data.substr(0, data.length()));
                 number_of_buffered_bytes += data.length();
                 data = "";
                 break;
             }
             else {
-                buffered_strings.insert(itr_data, data.substr(0, gap));
-                data = data.substr(start_index, data.length() - gap);
+                itr_data = buffered_strings.insert(itr_data, data.substr(0, gap));
+                data = data.substr(gap, data.length() - gap);
                 number_of_buffered_bytes += gap;
                 first_index = start_index;
             }

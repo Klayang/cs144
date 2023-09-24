@@ -3,7 +3,7 @@
 #include "byte_stream.hh"
 
 #include <string>
-#include <vector>
+#include <list>
 using namespace std;
 
 class Reassembler
@@ -37,8 +37,8 @@ private:
     long unsigned int current_index = 0; // index of the byte the reassembler is currently at
     long unsigned int number_of_buffered_bytes = 0;
     bool hasTouchedLast = false;
-    vector<long unsigned int> buffered_string_indices = vector<long unsigned int>();
-    vector<string> buffered_strings = vector<string>();
+    list<long unsigned int> buffered_string_indices = list<long unsigned int>();
+    list<string> buffered_strings = list<string>();
     void update_buffer(Writer& output);
     void buffer_data(long unsigned first_index, string data);
 };
