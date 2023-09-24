@@ -1,13 +1,13 @@
 Checkpoint 1 Writeup
 ====================
 
-My name: [your name here]
+My name: Shijie Yang
 
-My SUNet ID: [your sunetid here]
+My SUNet ID: I'm not a student in MIT, but an engineer in PEC
 
-I collaborated with: [list sunetids here]
+I collaborated with: no one
 
-I would like to thank/reward these classmates for their help: [list sunetids here]
+I would like to thank/reward these classmates for their help: cs self learning and his buddies
 
 This lab took me about [n] hours to do. I [did/did not] attend the lab session.
 

@@ -3,6 +3,8 @@
 #include "byte_stream.hh"
 
 #include <string>
+#include <vector>
+using namespace std;
 
 class Reassembler
 {
@@ -31,4 +33,12 @@ public:
 
   // How many bytes are stored in the Reassembler itself?
   uint64_t bytes_pending() const;
+private:
+    long unsigned int current_index = 0; // index of the byte the reassembler is currently at
+    long unsigned int number_of_buffered_bytes = 0;
+    bool hasTouchedLast = false;
+    vector<long unsigned int> buffered_string_indices = vector<long unsigned int>();
+    vector<string> buffered_strings = vector<string>();
+    void update_buffer(Writer& output);
+    void buffer_data(long unsigned first_index, string data);
 };
