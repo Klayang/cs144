@@ -32,7 +32,7 @@ uint64_t Reassembler::bytes_pending() const
 void Reassembler::update_buffer(Writer& output) {
     auto itr_index = buffered_string_indices.begin();
     auto itr_data = buffered_strings.begin();
-    for (; itr_index != buffered_string_indices.end(); ++itr_index, ++itr_data) {
+    for (; itr_index != buffered_string_indices.end();) {
         if (current_index < *itr_index) break;
         else if (current_index < *itr_index + (*itr_data).length()) {
             string data = *itr_data;
@@ -45,11 +45,11 @@ void Reassembler::update_buffer(Writer& output) {
 
             buffered_string_indices.erase(itr_index);
             buffered_strings.erase(itr_data);
-            break;
         }
         else {
             buffered_string_indices.erase(itr_index);
             buffered_strings.erase(itr_data);
+            number_of_buffered_bytes -= (*itr_data).length();
         }
     }
 }
