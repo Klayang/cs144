@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <math.h>
 
 /*
  * The Wrap32 type represents a 32-bit unsigned integer that:
@@ -31,3 +32,5 @@ public:
   Wrap32 operator+( uint32_t n ) const { return Wrap32 { raw_value_ + n }; }
   bool operator==( const Wrap32& other ) const { return raw_value_ == other.raw_value_; }
 };
+
+uint64_t get_gap_to_checkpoint(uint64_t times, uint64_t checkpoint, uint64_t offset);
