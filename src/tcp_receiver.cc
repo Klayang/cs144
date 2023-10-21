@@ -9,12 +9,15 @@ void TCPReceiver::receive( TCPSenderMessage message, Reassembler& reassembler, W
         zero_point = message.seqno;
     }
     else {
-        reassembler.insert(message.seqno.unwrap(zero_point, 0) - 1, message.payload, message.FIN, inbound_stream);
+        reassembler.insert(message.seqno.unwrap(zero_point.value(), 0) - 1, message.payload, message.FIN, inbound_stream);
     }
 }
 
 TCPReceiverMessage TCPReceiver::send( const Writer& inbound_stream ) const
 {
-    TCPReceiverMessage message = {zero_point + inbound_stream.bytes_pushed() + 1, (uint16_t)inbound_stream.available_capacity()};
+    TCPReceiverMessage message;
+    message.window_size = (uint16_t)inbound_stream.available_capacity();
+    if (zero_point.has_value()) message.ackno = zero_point.value() + inbound_stream.bytes_pushed() + 1;
+    else message.ackno = nullopt;
     return message;
 }
