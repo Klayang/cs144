@@ -7,7 +7,7 @@ using namespace std;
 Wrap32 Wrap32::wrap( uint64_t n, Wrap32 zero_point )
 {
     // (a + b) % c = (a % c + b % c) % c
-    return Wrap32((n % (uint64_t)pow(2, 32) + zero_point.raw_value_) % (uint64_t)pow(2, 32));
+    return Wrap32((uint32_t)n + zero_point.raw_value_);
 }
 
 uint64_t Wrap32::unwrap( Wrap32 zero_point, uint64_t checkpoint ) const
