@@ -74,25 +74,32 @@ void TCPSender::push( Reader& outbound_stream )
         return;
     }
 
-    uint64_t windowSpace = right_edge_of_window - left_edge_of_window;
-    uint16_t availableBytes = min(outbound_stream.bytes_buffered() + SYN, windowSpace);
+    // no window but has data, and all previous segment being ack-ed => send 1-byte look-ahead
     string data = {outbound_stream.peek().begin(), outbound_stream.peek().end()};
-    if (availableBytes == 0) {
+    if (left_edge_of_window == right_edge_of_window && outstandingSegments.empty()) {
         handleLookAheadCase(data, outbound_stream);
         return;
     }
 
-    size_t dataLength = availableBytes;
-    if (SYN) dataLength -= 1;
+    // from now on, we'll handle the regular case, which is we have both data & window size
 
-    data = data.substr(0, dataLength);
+    // get if we need to set SYN & FIN, and # bytes in the payload
+    uint64_t windowSpace = right_edge_of_window - left_edge_of_window;
+    if (SYN) {
+        windowSpace -= 1;
+    }
+    uint64_t dataLength = min(outbound_stream.bytes_buffered(), windowSpace);
     outbound_stream.pop(dataLength);
-    availableBytes = min(availableBytes + outbound_stream.is_finished(), (int)windowSpace);
+    if (outbound_stream.is_finished() && dataLength < windowSpace) {
+        FIN = true;
+    }
 
+    // get # segments that we need to make in this function
     int numOfSegments = dataLength / TCPConfig::MAX_PAYLOAD_SIZE;
     if (dataLength % TCPConfig::MAX_PAYLOAD_SIZE == 0 && numOfSegments > 0) {
         numOfSegments -= 1;
     }
+
     for (int i = 0; i <= numOfSegments; ++i) {
         TCPSenderMessage segment;
 
@@ -100,25 +107,21 @@ void TCPSender::push( Reader& outbound_stream )
         segment.seqno = Wrap32::wrap(left_edge_of_window, isn_);
 
         // set SYN field of TCPSenderMessage
-        segment.SYN = SYN;
         if (SYN) {
+            segment.SYN = true;
             SYN = false;
-            availableBytes -= 1;
         }
 
         // set payload field of TCPSenderMessage
-        uint16_t bytesLeftInData = data.size() - i * TCPConfig::MAX_PAYLOAD_SIZE;
-        uint16_t  numOfBytes = min(min(uint16_t (TCPConfig::MAX_PAYLOAD_SIZE), availableBytes), bytesLeftInData);
+        uint16_t  numOfBytes = TCPConfig::MAX_PAYLOAD_SIZE;
+        if (i == numOfSegments && dataLength % TCPConfig::MAX_PAYLOAD_SIZE != 0) {
+            numOfBytes = dataLength % TCPConfig::MAX_PAYLOAD_SIZE;
+        }
         segment.payload = data.substr(i * TCPConfig::MAX_PAYLOAD_SIZE, numOfBytes);
 
-        // get available bytes left after loading the current payload
-        availableBytes -= numOfBytes;
-
         // set FIN field of TCPSenderMessage
-        if (outbound_stream.is_finished() && availableBytes > 0 && i == numOfSegments) {
-            FIN = true;
+        if (i == numOfSegments && FIN) {
             segment.FIN = true;
-            availableBytes -= 1;
         }
 
         // put the segment in the buffer
@@ -133,7 +136,6 @@ void TCPSender::push( Reader& outbound_stream )
 optional<TCPSenderMessage> TCPSender::maybe_send()
 {
     if (toBeSentSegments.empty()) return nullopt;
-//    if (toBeSentSegments.size() < outstandingSegments.size() && left_edge_of_window > right_edge_of_window) return nullopt;
     if (!isTimerOn) {
         isTimerOn = true;
         timer = 0;
