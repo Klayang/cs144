@@ -192,3 +192,18 @@ TCPSenderMessage TCPSender::send_empty_message() const
     segment.seqno = Wrap32::wrap(left_edge_of_window, isn_);
     return segment;
 }
+
+TCPSender::UpdateOutstandingSegmentsFunctor::UpdateOutstandingSegmentsFunctor(TCPSender &sender, const uint64_t &ackno): sender_(sender), ackno_(ackno)
+{
+}
+
+bool TCPSender::UpdateOutstandingSegmentsFunctor::operator()(const TCPSenderMessage& segment) {
+    uint64_t current_outstanding_seqno = segment.seqno.unwrap(sender_.isn_, sender_.left_edge_of_window)
+                                         + segment.sequence_length();
+
+    if (current_outstanding_seqno > ackno_) {
+        return false;
+    }
+
+    return true;
+}

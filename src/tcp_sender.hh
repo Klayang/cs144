@@ -24,18 +24,8 @@ class TCPSender
         TCPSender& sender_;
         const uint64_t& ackno_; // this is the seqno from the tcp receiver message
     public:
-        explicit UpdateOutstandingSegmentsFunctor(TCPSender& sender, const uint64_t& ackno): sender_(sender), ackno_(ackno) {}
-        bool operator()(const TCPSenderMessage& segment) {
-            uint64_t current_outstanding_seqno = segment.seqno.unwrap(sender_.isn_, sender_.left_edge_of_window)
-                    + segment.sequence_length();
-
-            if (current_outstanding_seqno > ackno_) {
-                return false;
-            }
-
-//            sender_.left_edge_of_window = current_outstanding_seqno;
-            return true;
-        }
+        explicit UpdateOutstandingSegmentsFunctor(TCPSender& sender, const uint64_t& ackno);
+        bool operator()(const TCPSenderMessage& segment);
     };
 public:
     /* Construct TCP sender with given default Retransmission Timeout and possible ISN */
