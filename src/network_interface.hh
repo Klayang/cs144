@@ -10,6 +10,7 @@
 #include <queue>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 // A "network interface" that connects IP (the internet layer, or network layer)
 // with Ethernet (the network access layer, or link layer).
@@ -32,6 +33,10 @@
 // the network interface passes it up the stack. If it's an ARP
 // request or reply, the network interface processes the frame
 // and learns or replies as necessary.
+
+constexpr size_t MAPPING_DURATION = 30000;
+constexpr size_t ARP_RESEND_PERIOD = 5000;
+
 class NetworkInterface
 {
 private:
@@ -40,6 +45,41 @@ private:
 
   // IP (known as Internet-layer or network-layer) address of the interface
   Address ip_address_;
+
+  // mapping table, used to contain mappings between IP & MAC addresses of other hosts
+  std::unordered_map<uint32_t, EthernetAddress> mapping_table;
+
+  // frames made via send_datagram, but not yet send via maybe_send
+  std::vector<EthernetFrame> buffered_frames;
+
+  // datagrams queued in send_datagram, for the MAC address is not known
+  std::vector<std::pair<InternetDatagram, uint32_t>> buffered_datagram_routes;
+
+  // timer for each IP-to-MAC address mapping (since the mapping should only exist for 30 secs)
+  std::unordered_map<uint32_t, size_t> mapping_timers; // entries removed when tick is called
+
+  // timer for sending ARP requests, since a 2nd request can only be sent, 5 secs after the 1st one
+  std::unordered_map<uint32_t, size_t> arp_timers; // entries removed when arp (MAC address) received
+
+
+  // a helper method to create a frame, that contains an ARP request message
+  EthernetFrame make_arp_frame(uint16_t opcode, uint32_t sender_ip_address,
+                               const EthernetAddress& sender_ethernet_address,
+                               uint32_t target_ip_address,
+                               const EthernetAddress& target_ethernet_address);
+
+  // a helper method to create a frame, that contains an IPv4 datagram
+  EthernetFrame make_datagram_frame(const EthernetAddress& sender_ethernet_address,
+                                           const EthernetAddress& target_ethernet_address,
+                                           const InternetDatagram& dgram);
+
+  // a functor class used to remake frames after getting the appropriate MAC address from ARP message
+  class RemoveBufferedDatagramFunctor {
+      uint32_t sender_ip_address_;
+  public:
+      explicit RemoveBufferedDatagramFunctor(uint32_t sender_ip_address): sender_ip_address_(sender_ip_address) {}
+      bool operator()(const std::pair<InternetDatagram, uint32_t>& datagram_route);
+  };
 
 public:
   // Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer)
