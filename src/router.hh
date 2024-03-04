@@ -48,12 +48,27 @@ public:
   }
 };
 
+class Route {
+    uint32_t route_prefix_;
+    uint8_t prefix_length_;
+    std::optional<Address> next_hop_;
+    size_t interface_num_;
+public:
+    friend class Router;
+    Route(uint32_t route_prefix, uint8_t prefix_length, std::optional<Address>& next_hop, size_t interface_num):
+            route_prefix_(route_prefix), prefix_length_(prefix_length), next_hop_(next_hop), interface_num_(interface_num) {}
+};
+
 // A router that has multiple network interfaces and
 // performs longest-prefix-match routing between them.
 class Router
 {
   // The router's collection of network interfaces
   std::vector<AsyncNetworkInterface> interfaces_ {};
+  // The router's collection of routes, i.e., routing table
+  std::vector<Route> routing_table_ {};
+  // A helper method to be called in route(), which is to route a single internet datagram
+  void route_datagrams(InternetDatagram& datagram);
 
 public:
   // Add an interface to the router
